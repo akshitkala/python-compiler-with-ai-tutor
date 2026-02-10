@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Compiler MVP</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Monaco Editor CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.min.js"></script>
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">AI Compiler <span class="badge">MVP</span></div>
+            <div class="actions">
+                <button id="run-btn" class="btn btn-primary">
+                    <span class="icon">▶</span> Run Code
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="split-view">
+            <!-- Left Panel: Editor -->
+            <div class="panel editor-panel">
+                <div class="panel-header">
+                    <span>main.py</span>
+                </div>
+                <div id="editor-container"></div>
+            </div>
+
+            <!-- Right Panel: Output & AI -->
+            <div class="panel side-panel">
+                <!-- Top Right: Output -->
+                <div class="sub-panel output-panel">
+                    <div class="panel-header">
+                        <span>Output</span>
+                        <button id="clear-btn" class="btn btn-sm">Clear</button>
+                    </div>
+                    <div id="output-container" class="scrollable">
+                        <pre id="output-content" class="placeholder">Run your code to see output here...</pre>
+                    </div>
+                </div>
+
+                <!-- Bottom Right: AI Assistant -->
+                <div class="sub-panel ai-panel">
+                    <div class="panel-header">
+                        <span>AI Assistant</span>
+                    </div>
+                    <div id="ai-container" class="scrollable">
+                        <div id="ai-content" class="placeholder">
+                            I'm ready to explain any errors you encounter!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Inject Config -->
+    <script>
+        window.EDITOR_CONFIG = {{ config | tojson }};
+        window.EDITOR_SNIPPETS = {{ snippets | tojson }};
+    </script>
+    
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/runner.js') }}"></script>
+</body>
+</html>
