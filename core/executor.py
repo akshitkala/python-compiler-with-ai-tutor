@@ -1,38 +1,68 @@
+import subprocess
 import sys
-import contextlib
-import io
-import traceback
+import tempfile
+import os
 
-@contextlib.contextmanager
-def captured_output():
-    new_out, new_err = io.StringIO(), io.StringIO()
-    old_out, old_err = sys.stdout, sys.stderr
-    try:
-        sys.stdout, sys.stderr = new_out, new_err
-        yield sys.stdout, sys.stderr
-    finally:
-        sys.stdout, sys.stderr = old_out, old_err
+# Default timeout in seconds
+EXECUTION_TIMEOUT = 5
 
-def execute_safe(code):
+
+def execute_safe(code, timeout=EXECUTION_TIMEOUT):
     """
-    Executes code using exec() to allow introspection of exceptions.
-    Returns structured dict matching app.py expectations.
+    Executes user Python code in a subprocess.
+    Returns: { success, output, stderr, error_type?, error_message?, line? }
     """
-    # Basic restricted globals for 'safety'
-    safe_globals = {"__builtins__": __builtins__}
-    safe_locals = {}
-    
     try:
-        with captured_output() as (out, err):
-            exec(code, safe_globals, safe_locals)
-        return {
-            "success": True,
-            "output": out.getvalue()
-        }
-    except Exception as e:
-        # We catch the exception to return it for analysis
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(code)
+            tmp_path = f.name
+
+        try:
+            result = subprocess.run(
+                [sys.executable, tmp_path],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=os.path.dirname(tmp_path),
+            )
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+        stdout = result.stdout or ""
+        stderr = result.stderr or ""
+
+        if result.returncode == 0:
+            return {
+                "success": True,
+                "output": stdout,
+                "stderr": stderr,
+            }
+        else:
+            return {
+                "success": False,
+                "output": stdout,
+                "stderr": stderr,
+                "returncode": result.returncode,
+            }
+
+    except subprocess.TimeoutExpired:
         return {
             "success": False,
             "output": "",
-            "exception": e
+            "stderr": "Execution timed out.",
+            "error_type": "TimeoutError",
+            "error_message": "Execution timed out.",
+            "line": None,
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "output": "",
+            "stderr": str(e),
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "line": None,
         }
